@@ -1,0 +1,31 @@
+{
+  "name": "subcultrue-musicroom",
+  "version": "1.0.0",
+  "description": "Subculture musicroom controller",
+  "main": "start.js",
+  "scripts": {
+    "start": "node start",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/HelloWorld017/Submusicbot.git"
+  },
+  "author": "Khinenw <deu07115@gmail.com>",
+  "license": "GPL-3.0",
+  "bugs": {
+    "url": "https://github.com/HelloWorld017/Submusicbot/issues"
+  },
+  "homepage": "https://github.com/HelloWorld017/Submusicbot#readme",
+  "dependencies": {
+    "body-parser": "^1.15.2",
+    "chalk": "^1.1.3",
+    "cheerio": "^0.22.0",
+    "download": "^5.0.2",
+    "express": "^4.14.0",
+    "morgan": "^1.7.0",
+    "object-merge": "^2.5.1",
+    "request-promise": "^4.1.1",
+    "telegram-bot-api": "^1.2.0"
+  }
+}

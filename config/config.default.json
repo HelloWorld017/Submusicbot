@@ -1,0 +1,5 @@
+{
+	"token": "Telegram Bot Token here",
+	"hookSecret": "Telegram Hook URL Secret (input random value)",
+	"hookUrl": "https://smc.khinenw.tk/"
+}
