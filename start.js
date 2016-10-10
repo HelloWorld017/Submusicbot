@@ -8,6 +8,9 @@ const rq = require('request-promise').defaults({
 	'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/53.0.2785.143 Safari/537.36'
 });
 
+const {Html5Entities} = require('html-entities');
+const entities = new Html5Entities();
+
 const telegram = require('telegram-bot-api');
 
 const config = require('./config/');
@@ -29,7 +32,7 @@ const handleHook = (update) => {
 				method: 'GET',
 				uri: `http://bgmstore.net/search?q_type=title&q_mode=general&q=${query}`
 			}).then((body) => {
-				const $ = cheerio(body);
+				const $ = cheerio.load(body);
 				const result = $('.searchResultWrap .title');
 				const buttons = [];
 				for(let i = 0; i < result.length; i++){
@@ -38,22 +41,21 @@ const handleHook = (update) => {
 					let match = v.attr('href').match(/view\/([a-zA-Z0-9]+)/);
 					if(match === null) continue;
 					if(match[1] === undefined) continue;
-					buttons.push({
-						callback_data: match[1],
-						text: v.html()
-					});
+					buttons.push([{
+						callback_data: 'bs:' + match[1],
+						text: entities.decode(v.html())
+					}]);
 				}
 				return rq({
 					method: 'POST',
-					json: true,
-					body: JSON.stringify({
+					form: {
 						chat_id: update.message.chat.id,
 						text: '보내실 노래를 선택해주세요!',
-						reply_markup: {
-							inline_keyboard: 'bs:' + buttons
-						}
-					}),
-					uri: _baseurl + 'sendMessage'
+						reply_markup: JSON.stringify({
+							inline_keyboard: buttons.slice(0, 20)
+						})
+					},
+					url: _baseurl + 'sendMessage'
 				});
 			}).catch((err) => {
 				console.error(err);
@@ -72,23 +74,19 @@ const handleHook = (update) => {
 				if(typeof data === 'string') data = JSON.parse(data);
 				return rq({
 	                method: 'POST',
-	                json: true,
-					headers: {
-						"Content-Type": "application/json",
-					},
-	                body: JSON.stringify({
+	                form: {
 						chat_id: update.message.chat.id,
 						text: '보내실 노래를 선택해주세요!',
-						reply_markup: {
+						reply_markup: JSON.stringify({
 							inline_keyboard: data.map((v) => {
-								return {
+								return [{
 									callback_data: 'op:' + v.id,
-									text: v.title + '-' + v.artist
-								};
-							})
-						}
-					}),
-	                uri: _baseurl + 'sendMessage'
+									text: v.artist + ' - ' + v.title
+								}];
+							}).slice(0, 20)
+						})
+					},
+	                url: _baseurl + 'sendMessage'
 	            });
 			}).catch((err) => {
 				console.error(err);
@@ -112,6 +110,7 @@ const handleCallback = (cq) => {
 	api.answerCallbackQuery({
 		callback_query_id: cq.inline_message_id
 	});
+	console.log(cq.data);
 	if(cq.data.startsWith('bs:')){
 		let data = cq.data.replace('bs:', '');
 
@@ -120,7 +119,7 @@ const handleCallback = (cq) => {
 			json: true,
 			formData: {
 				chat_id: config.target,
-				audio: download(`https://dl.bgms.kr/download/${data.id}/mp3/musik`)
+				audio: download(`https://dl.bgms.kr/download/${data}/mp3/musik`)
 			},
 			uri: _baseurl + 'sendAudio'
 		});

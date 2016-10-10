@@ -23,6 +23,7 @@
     "cheerio": "^0.22.0",
     "download": "^5.0.2",
     "express": "^4.14.0",
+    "html-entities": "^1.2.0",
     "morgan": "^1.7.0",
     "object-merge": "^2.5.1",
     "request-promise": "^4.1.1",
