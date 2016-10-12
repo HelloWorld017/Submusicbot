@@ -251,6 +251,7 @@ global.api = new telegram({
 });
 
 if(useHook){
+	const hook = config.hookSecret + config.token + Math.random().toString(36).substr(2);
 	const app = express();
 	if(debug) app.use(logger('dev'));
 	app.use(bodyParser.text({
@@ -334,3 +335,4 @@ if(useHook){
 }else{
 	api.on('update', handleHook)
 }
+
