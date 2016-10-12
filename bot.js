@@ -151,7 +151,7 @@ const handleCallback = (cq) => {
 	api.answerCallbackQuery({
 		callback_query_id: cq.inline_message_id
 	}).catch((err) => {
-		console.error(chalk.bgRed(err.stack));
+		//console.error(chalk.bgRed(err.stack));
 	});
 
 	if(musicList.indexOf(cq.data) !== -1){
