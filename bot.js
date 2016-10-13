@@ -1,3 +1,4 @@
+const alsong = require('alsong');
 const bodyParser = require('body-parser');
 const chalk = require('chalk');
 const cheerio = require('cheerio');
@@ -10,6 +11,7 @@ const requestOptions = {
 };
 const request = require('request').defaults(requestOptions);
 const rq = require('request-promise').defaults(requestOptions);
+const {PassThrough} = require('stream');
 
 const {Html5Entities} = require('html-entities');
 const entities = new Html5Entities();
@@ -131,6 +133,40 @@ bs:[검색할 대상]으로 bgmstore에서 검색,
 	}
 };
 
+const sendMusic = (url, title, artist) => {
+	return new Promise((reject, resolve) => {
+		let stream = request(url);
+		stream.options = `${artist} - ${title}.mp3`;
+
+		let pass = new PassThrough;
+		let pass2 = new PassThrough;
+
+		stream.pipe(pass);
+		stream.pipe(pass2);
+
+		alsong.getHash(pass).then((v) => {
+			return rq({
+				method: 'POST',
+				json: true,
+				formData: {
+					chat_id: config.target,
+					audio: pass2,
+					title,
+					performer: artist,
+					disable_notification: 'true'
+				},
+				uri: _baseurl + 'sendAudio',
+				reply_markup: JSON.stringify({
+					inline_keyboard: [[{
+						text: '가사 보기',
+						callback_data: v
+					}]]
+				})
+			});
+		});
+	});
+};
+
 const handleCallback = (cq) => {
 	if(typeof cq.data !== 'string') return;
 
@@ -169,19 +205,7 @@ const handleCallback = (cq) => {
 			let match = text.match(/^(?:\[[^]+\])?([^-]+) ?- ?([^()]+)(?:[ ]{1,5}([^]+))?$/);
 			let [artist, title] = ['', text];
 			if(match !== null) [artist, title] = [match[0], match[1]];
-
-			return rq({
-				method: 'POST',
-				json: true,
-				formData: {
-					chat_id: config.target,
-					audio: request(`https://dl.bgms.kr/download/${data[1]}/mp3/${encodeURIComponent(text)}`),
-					title,
-					performer: artist,
-					disable_notification: 'true'
-				},
-				uri: _baseurl + 'sendAudio'
-			});
+			return sendMusic(`https://dl.bgms.kr/download/${data[1]}/mp3/${encodeURIComponent(text)}`, title, artist);
 		}).then(() => {
 			sendMessage('성공적으로 전송했습니다!');
 			musicList.push(cq.data);
@@ -193,7 +217,7 @@ const handleCallback = (cq) => {
 	}else if(cq.data.startsWith('op:')){
 		let data = cq.data.replace('op:', '');
 		let loadedData = undefined;
-		sendMessage('osu! 데이터베이스에서 불러오는 것은 혀재 *상당히* 느립니다.\n느긋하게 다른 것을 하고 계시면 됩니다.');
+		sendMessage('osu! 데이터베이스에서 불러오는 것은 현재 *상당히* 느립니다.\n느긋하게 다른 것을 하고 계시면 됩니다.');
 		rq({
 			method: 'GET',
 			uri: `https://bgm.khinenw.tk/load/${data}`,
@@ -219,19 +243,16 @@ const handleCallback = (cq) => {
 		}).then((osuData) => {
 			let informations = osuData[0];
 			let [artist, title] = ['', data];
-			if(informations !== undefined) [artist, title] = [informations.artistU, informations.titleU];
-			return rq({
-				method: 'POST',
-				json: true,
-				formData: {
-					chat_id: config.target,
-					title,
-					performer: artist,
-					audio: request(`https://bgm.khinenw.tk/${loadedData.audio}`),
-					disable_notification: 'true'
-				},
-				uri: _baseurl + 'sendAudio'
-			});
+			if(
+				informations !== undefined &&
+				(informations.artistU || informations.artist) &&
+				(informations.titleU || informations.title)
+			) [artist, title] = [
+				informations.artistU || informations.artist,
+				informations.titleU || informations.title
+			];
+
+			return sendMusic(`https://bgm.khinenw.tk/${loadedData.audio}`, title, artist);
 		}).then(() => {
 			sendMessage('성공적으로 전송했습니다!');
 			musicList.push(cq.data);
